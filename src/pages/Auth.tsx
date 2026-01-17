@@ -35,7 +35,7 @@ export default function Auth() {
 
   const generateEmail = () => {
     if (firstName && lastName) {
-      const suggested = `${firstName}${lastName}*raveoir.github.io`.toLowerCase().replace(/\s/g, "");
+      const suggested = `${firstName}${lastName}*raveoir.vercel.app`.toLowerCase().replace(/\s/g, "");
       setEmail(suggested);
     }
   };
@@ -175,7 +175,7 @@ export default function Auth() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
-                    placeholder="JohnDoe*raveoir.github.io"
+                    placeholder="JohnDoe*raveoir.vercel.app"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-9 bg-background"
@@ -184,7 +184,7 @@ export default function Auth() {
                 </div>
                 {mode === "register" && (
                   <p className="text-xs text-muted-foreground">
-                    Format: YourName*raveoir.github.io
+                    Format: YourName*raveoir.vercel.app
                   </p>
                 )}
               </div>

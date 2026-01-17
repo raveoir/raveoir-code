@@ -33,8 +33,8 @@ export function ComposeModal({ open, onOpenChange, onEmailSent }: ComposeModalPr
     
     setError("");
 
-    if (!toEmail.includes("*raveoir.github.io")) {
-      setError("Please enter a valid Raveoir email (e.g., user*raveoir.github.io)");
+    if (!toEmail.includes("*raveoir.vercel.app")) {
+      setError("Please enter a valid Raveoir email (e.g., user*raveoir.vercel.app)");
       return;
     }
 
@@ -103,7 +103,7 @@ export function ComposeModal({ open, onOpenChange, onEmailSent }: ComposeModalPr
             <Label htmlFor="to">To</Label>
             <Input
               id="to"
-              placeholder="recipient*raveoir.github.io"
+              placeholder="recipient*raveoir.vercel.app"
               value={toEmail}
               onChange={(e) => setToEmail(e.target.value)}
               className="bg-background border-input"

@@ -95,11 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getSuggestedEmails = async (firstName: string, lastName: string): Promise<string[]> => {
     const base = `${firstName}${lastName}`.toLowerCase().replace(/\s/g, "");
     const suggestions = [
-      `${base}*raveoir.github.io`,
-      `${firstName.toLowerCase()}${lastName.charAt(0).toLowerCase()}*raveoir.github.io`,
-      `${firstName.charAt(0).toLowerCase()}${lastName.toLowerCase()}*raveoir.github.io`,
-      `${base}${Math.floor(Math.random() * 100)}*raveoir.github.io`,
-      `${base}${new Date().getFullYear()}*raveoir.github.io`,
+      `${base}*raveoir.vercel.app`,
+      `${firstName.toLowerCase()}${lastName.charAt(0).toLowerCase()}*raveoir.vercel.app`,
+      `${firstName.charAt(0).toLowerCase()}${lastName.toLowerCase()}*raveoir.vercel.app`,
+      `${base}${Math.floor(Math.random() * 100)}*raveoir.vercel.app`,
+      `${base}${new Date().getFullYear()}*raveoir.vercel.app`,
     ];
 
     const availableSuggestions: string[] = [];

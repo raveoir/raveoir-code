@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
-import { AlertTriangle, CheckCircle, Mail, MailOpen } from "lucide-react";
+import { AlertTriangle, CheckCircle, Mail, MailOpen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "./UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,9 +33,10 @@ interface EmailListProps {
   type: "inbox" | "sent" | "spam";
   onEmailClick: (email: EmailData) => void;
   onRefresh: () => void;
+  onDelete?: (email: EmailData) => void;
 }
 
-export function EmailList({ emails, type, onEmailClick, onRefresh }: EmailListProps) {
+export function EmailList({ emails, type, onEmailClick, onRefresh, onDelete }: EmailListProps) {
   const { profile } = useAuth();
 
   const handleReportSpam = async (e: React.MouseEvent, email: EmailData) => {
@@ -79,6 +80,13 @@ export function EmailList({ emails, type, onEmailClick, onRefresh }: EmailListPr
     onRefresh();
   };
 
+  const handleDelete = async (e: React.MouseEvent, email: EmailData) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(email);
+    }
+  };
+
   const handleEmailClick = async (email: EmailData) => {
     if (type === "inbox" && !email.is_read) {
       await supabase
@@ -113,61 +121,71 @@ export function EmailList({ emails, type, onEmailClick, onRefresh }: EmailListPr
           <div
             key={email.id}
             onClick={() => handleEmailClick(email)}
-            className={`flex items-center gap-4 p-4 cursor-pointer transition-all hover:bg-secondary/50 ${
+            className={`flex items-center gap-3 p-3 cursor-pointer transition-all hover:bg-secondary/50 ${
               isUnread ? "bg-raven-subtle/50" : ""
             }`}
           >
             <UserAvatar
               email={displayUser.email}
               color={displayUser.avatar_color}
-              size="md"
+              size="sm"
             />
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className={`font-medium truncate ${isUnread ? "text-foreground" : "text-muted-foreground"}`}>
+                <span className={`text-sm font-medium truncate ${isUnread ? "text-foreground" : "text-muted-foreground"}`}>
                   {displayUser.first_name} {displayUser.last_name}
                 </span>
                 {isUnread && (
-                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                 )}
               </div>
-              <p className={`truncate ${isUnread ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+              <p className={`text-sm truncate ${isUnread ? "font-medium text-foreground" : "text-muted-foreground"}`}>
                 {email.subject}
               </p>
-              <p className="text-sm text-muted-foreground truncate">
-                {email.body.substring(0, 60)}...
+              <p className="text-xs text-muted-foreground truncate">
+                {email.body.substring(0, 50)}...
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:block">
                 {formatDistanceToNow(new Date(email.created_at), { addSuffix: true })}
               </span>
 
               {type === "inbox" && (
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={(e) => handleReportSpam(e, email)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs px-2"
+                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  title="Report as spam"
                 >
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Spam
+                  <AlertTriangle className="h-3.5 w-3.5" />
                 </Button>
               )}
 
               {type === "spam" && (
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={(e) => handleRemoveSpam(e, email)}
-                  className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs px-2"
+                  className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                  title="Not spam"
                 >
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Not Spam
+                  <CheckCircle className="h-3.5 w-3.5" />
                 </Button>
               )}
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => handleDelete(e, email)}
+                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                title="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
 
               {isUnread ? (
                 <Mail className="h-4 w-4 text-primary" />

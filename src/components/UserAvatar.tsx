@@ -1,14 +1,15 @@
 interface UserAvatarProps {
   email: string;
   color: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   className?: string;
 }
 
 const sizeClasses = {
-  sm: "w-8 h-8 text-sm",
-  md: "w-10 h-10 text-base",
-  lg: "w-14 h-14 text-xl",
+  xs: "w-6 h-6 text-xs",
+  sm: "w-7 h-7 text-xs",
+  md: "w-8 h-8 text-sm",
+  lg: "w-10 h-10 text-base",
 };
 
 export function UserAvatar({ email, color, size = "md", className = "" }: UserAvatarProps) {
@@ -16,7 +17,7 @@ export function UserAvatar({ email, color, size = "md", className = "" }: UserAv
 
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-semibold text-white select-none ${className}`}
+      className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-medium text-white select-none shrink-0 ${className}`}
       style={{ backgroundColor: color }}
     >
       {firstLetter}

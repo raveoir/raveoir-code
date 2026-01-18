@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Inbox, Send, AlertTriangle, PenLine, LogOut, RefreshCw } from "lucide-react";
+import { Inbox, Send, AlertTriangle, PenLine, LogOut, RefreshCw, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -10,9 +10,12 @@ import { ComposeModal } from "@/components/ComposeModal";
 import { EmailList } from "@/components/EmailList";
 import { EmailView } from "@/components/EmailView";
 import { supabase } from "@/integrations/supabase/client";
+import { useArchivedEmails } from "@/hooks/useArchivedEmails";
+import { toast } from "sonner";
+import { differenceInDays } from "date-fns";
 import ravenLogo from "@/assets/raven-logo.png";
 
-type Tab = "inbox" | "sent" | "spam";
+type Tab = "inbox" | "sent" | "spam" | "archived";
 
 interface EmailData {
   id: string;
@@ -47,6 +50,8 @@ export default function Dashboard() {
   const [emails, setEmails] = useState<EmailData[]>([]);
   const [spamUserIds, setSpamUserIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const { archivedEmails, saveToArchive, removeFromArchive } = useArchivedEmails(profile?.id);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -87,11 +92,50 @@ export default function Dashboard() {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      // Type assertion needed due to Supabase typing limitations
-      setEmails(data as unknown as EmailData[]);
+      const typedData = data as unknown as EmailData[];
+      
+      // Auto-archive emails older than 3 days
+      const now = new Date();
+      const oldEmails = typedData.filter(email => 
+        differenceInDays(now, new Date(email.created_at)) >= 3 &&
+        (email.to_user.id === profile.id || email.from_user.id === profile.id)
+      );
+      
+      if (oldEmails.length > 0) {
+        // Save to local storage archive
+        saveToArchive(oldEmails);
+        
+        // Delete old emails from database
+        const oldEmailIds = oldEmails.map(e => e.id);
+        await supabase
+          .from("emails")
+          .delete()
+          .in("id", oldEmailIds);
+        
+        // Filter out old emails from current view
+        setEmails(typedData.filter(e => !oldEmailIds.includes(e.id)));
+      } else {
+        setEmails(typedData);
+      }
     }
     setIsRefreshing(false);
-  }, [profile, fetchSpamUserIds]);
+  }, [profile, fetchSpamUserIds, saveToArchive]);
+
+  const handleDeleteEmail = async (email: EmailData) => {
+    const { error } = await supabase
+      .from("emails")
+      .delete()
+      .eq("id", email.id);
+    
+    if (error) {
+      toast.error("Failed to delete email");
+      return;
+    }
+    
+    toast.success("Email deleted");
+    setSelectedEmail(null);
+    fetchEmails();
+  };
 
   useEffect(() => {
     if (profile) {
@@ -147,6 +191,8 @@ export default function Dashboard() {
             e.to_user.id === profile.id && 
             spamUserIds.includes(e.from_user.id)
         );
+      case "archived":
+        return archivedEmails;
       default:
         return [];
     }
@@ -156,6 +202,7 @@ export default function Dashboard() {
     { id: "inbox" as Tab, label: "Inbox", icon: Inbox },
     { id: "sent" as Tab, label: "Sent", icon: Send },
     { id: "spam" as Tab, label: "Spam", icon: AlertTriangle },
+    { id: "archived" as Tab, label: "Archived", icon: Archive },
   ];
 
   const unreadCount = emails.filter(
@@ -231,15 +278,15 @@ export default function Dashboard() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border space-y-3">
-          <div className="flex items-center gap-3">
+        <div className="p-3 border-t border-border space-y-2">
+          <div className="flex items-center gap-2">
             <UserAvatar
               email={profile.email}
               color={profile.avatar_color}
-              size="md"
+              size="sm"
             />
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate text-foreground">
+              <p className="text-sm font-medium truncate text-foreground">
                 {profile.first_name} {profile.last_name}
               </p>
               <p className="text-xs text-muted-foreground truncate">
@@ -254,9 +301,9 @@ export default function Dashboard() {
               variant="ghost"
               size="icon"
               onClick={() => setShowLogout(true)}
-              className="rounded-full text-muted-foreground hover:text-destructive"
+              className="rounded-full h-8 w-8 text-muted-foreground hover:text-destructive"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -285,14 +332,16 @@ export default function Dashboard() {
               email={selectedEmail}
               onBack={() => setSelectedEmail(null)}
               isSent={activeTab === "sent"}
+              onDelete={activeTab !== "archived" ? () => handleDeleteEmail(selectedEmail) : undefined}
             />
           ) : (
             <div className="h-full overflow-auto">
               <EmailList
                 emails={getFilteredEmails()}
-                type={activeTab}
+                type={activeTab === "archived" ? "inbox" : activeTab}
                 onEmailClick={setSelectedEmail}
                 onRefresh={fetchEmails}
+                onDelete={activeTab !== "archived" ? handleDeleteEmail : undefined}
               />
             </div>
           )}
